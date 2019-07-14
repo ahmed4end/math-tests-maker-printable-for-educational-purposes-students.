@@ -15,15 +15,21 @@ class Paper():
 					"7":"٧",
 					"8":"٨",
 					"9":"٩"}
+
 		self.A4 = 2480, 3508
 		self.img = Image.new(mode = 'RGB' , size = self.A4 , color = "white")    
 		self.draw = ImageDraw.Draw(self.img)
 		self.fnt = ImageFont.truetype(os.path.join(os.getcwd()+ "\\ar.ttf") , 130)
+		self.smallfnt = ImageFont.truetype(os.path.join(os.getcwd()+ "\\ar.ttf") , 75)
 
 		self.replace = lambda dict, text: re.sub("|".join(map(re.escape, dict.keys())),
 		 	     lambda m: dict[m.string[m.start():m.end()]],
 		         text)
-		self.descend = 0
+		
+		self.memory = 9999 # this variable is for the function: self.rando() :"D
+
+		# BORDER HERE .
+		self.draw.rectangle([(30,30), (self.A4[0]-30, self.A4[1]-30)], outline="rgb(150, 150, 150)", width=5)
 
 
 	def Core(self,filename , rows, columns):
@@ -40,32 +46,64 @@ class Paper():
 
 
 				self.descend = 0   #this part is for the steps that help make the math readable 
-				#print(self.crack(filename)[i][j])
+
+				########################################### WORKING AREA #########################################################
+
+				self.draw.text(self.fixTextSize((r+75, c+25), "+"), text=self.replace(self.nums, f"({str(sum([j,i])+[i for i in range(1,50)if i%2 != 0][i])})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
+				
 				try:
-					freeze = self.SimpleRandomEngine(self.crack(filename)[i][j])
+					freeze = self.DomesticREngine(self.crack(filename)[i][j])
 					for e, b in enumerate(freeze):   
-						self.recognizer(b, r, c, isend = True if b == freeze[-1] else False)
-						print(b)
-						print(self.SimpleRandomEngine(self.crack(filename)[i][j])[-1])
-						#print(True if b == self.crack(filename)[i][j][-1] else False)
+						self.recognizer(b, r, c, isend = True if e == len(list(enumerate(freeze)))-1 else False)
 				except:
 					print("this index doesn't exist: "+"("+ str(i)+","+str(j) +")"+ ", or you didn't command more than :" + str(len(self.crack(filename))))
+				
+				
+				###################################################################################################################
 
 		self.img.save("aa.png")
-	
-	def SimpleRandomEngine(self, cracked):
+	def DomesticREngine(self, cracked, integer_values= True, ansers_range_limit = 100):
+		#cracked        : the list that contains the equstion parts. 
+		#################### conditions ##################################
+		#integer_values : the term guarantees that the answers will be simple integers
+		#ansers_range_limit : that makes all answers less than this value.
+
 		self.replaceV2 = lambda dict, text: re.sub("|".join(map(re.escape, dict.keys())),
-		 	     lambda m: str(randint(0, dict[m.string[m.start():m.end()]])),
+		 	     lambda m: str(self.rando(*dict[m.string[m.start():m.end()]])),
 		         text)
-		ranges = {
-				"d": 100,
-				"c": 30,
-				"b": 20,
-				"a": 10,
+		ranges ={#!WARNING : when using 0 in the range below it may causes Zero division error that will lead that some question will be removed automatically.
+				"d": (2,100), 
+				"c": (2,30),
+				"b": (2,20),
+				"a": (2,10),
+
+			}
+		
+		while True:
+			sample = eval(self.replaceV2(ranges, str(cracked)))
+			eq = eval("".join(sample))
+			if eq == int(eq) and eq <= ansers_range_limit:
+				return sample
+	def SimpleRandomEngine(self, cracked): # this engine is old you shouldn't use it
+		self.replaceV2 = lambda dict, text: re.sub("|".join(map(re.escape, dict.keys())),
+		 	     lambda m: str(randint(*dict[m.string[m.start():m.end()]])),
+		         text)
+		ranges ={
+				"d": (2,100),
+				"c": (2,30),
+				"b": (2,20),
+				"a": (2,10),
 			}
 
 		return eval(self.replaceV2(ranges, str(cracked)))
-
+	def rando(self, s,e): #this function is the same random.randint however it's eveb better it can't return the same num twice in row.
+			#global self.memory
+			n = 0
+			while True:
+				n = randint(s, e)
+				if n != self.memory:
+					self.memory = n
+					return n
 	def recognizer(self, piece, r, c, extra_sapcing=20,isend=False, equal_sign= True):
 		#piece : the math piece or part that would be recognzied as a math function during the process. 
 		#r     : the number of rows. 
@@ -96,8 +134,7 @@ class Paper():
 					#res[i].append(re.findall(r"([0-9]+/[0-9]+|[+-]|[0-9]+)", j))      #disabled while random exists.
 					res[i].append(re.findall(r"([0-9abcd]+/[0-9abcd]+|[+-]|[0-9abcd]+)", j))
 		return [i for i in res if i != []]
-
-	def NumberOfLines_Positions(self, size, n, head=400, tail=400, margin=50): # this func produce vertical coordinates of question.
+	def NumberOfLines_Positions(self, size, n, head= 400, tail=400, margin=50): # this func produce vertical coordinates of question.
 		#size   : size of the paper.
 		#n      : number of lines.
 		#head   : empty space for the heading .
@@ -133,7 +170,8 @@ class Paper():
 		return self.draw.textsize(text= operator, font= self.fnt) #adjust
 	def numeral(self,pos ,num, disable_drawing= False, not_numerals=False):
 		if disable_drawing: return self.draw.textsize(text= num, font= self.fnt)
-		self.draw.text(self.fixTextSize(pos, num, not_numerals), text=self.replace(self.nums, num)[::-1], fill="black", font=self.fnt )
+		print()
+		self.draw.text(self.fixTextSize(pos, num, not_numerals), text=self.replace(self.nums, num), fill="black", font=self.fnt )
 	def Fraction(self, pos, n, d, margin_from_fractoion_center= 70, disable_drawing=False):
 		#pos : the position of the fraction. 
 		#n   : the numerator of the fraction.
@@ -163,6 +201,6 @@ class Paper():
 		self.draw.text(dFixedPosition, text=self.replace(self.nums, d), fill="black", font=self.fnt )
 		return centerSize              #adjust
 
-Paper().Core("math1", 10, 3)
+Paper().Core("math2", 10, 3)
 
 os.startfile(f"aa.png")
