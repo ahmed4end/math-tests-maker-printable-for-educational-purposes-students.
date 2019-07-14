@@ -1,6 +1,6 @@
-from PIL import Image , ImageDraw , ImageFont
+from PIL import Image , ImageDraw , ImageFont #6.1.0
 import os, re
-import PIL
+from random import randint
 
 
 class Paper():
@@ -25,6 +25,7 @@ class Paper():
 		         text)
 		self.descend = 0
 
+
 	def Core(self,filename , rows, columns):
 		#filename: the name file that we would extract the math equations from.
 		#Core : is the core function that make all this beautiful thing works and produce actual tests. 
@@ -39,13 +40,31 @@ class Paper():
 
 
 				self.descend = 0   #this part is for the steps that help make the math readable 
+				#print(self.crack(filename)[i][j])
 				try:
-					for e, b in enumerate(self.crack(filename)[i][j]):   
-						self.recognizer(b, r, c, isend = True if b == self.crack(filename)[i][j][-1] else False)
+					freeze = self.SimpleRandomEngine(self.crack(filename)[i][j])
+					for e, b in enumerate(freeze):   
+						self.recognizer(b, r, c, isend = True if b == freeze[-1] else False)
+						print(b)
+						print(self.SimpleRandomEngine(self.crack(filename)[i][j])[-1])
+						#print(True if b == self.crack(filename)[i][j][-1] else False)
 				except:
 					print("this index doesn't exist: "+"("+ str(i)+","+str(j) +")"+ ", or you didn't command more than :" + str(len(self.crack(filename))))
 
 		self.img.save("aa.png")
+	
+	def SimpleRandomEngine(self, cracked):
+		self.replaceV2 = lambda dict, text: re.sub("|".join(map(re.escape, dict.keys())),
+		 	     lambda m: str(randint(0, dict[m.string[m.start():m.end()]])),
+		         text)
+		ranges = {
+				"d": 100,
+				"c": 30,
+				"b": 20,
+				"a": 10,
+			}
+
+		return eval(self.replaceV2(ranges, str(cracked)))
 
 	def recognizer(self, piece, r, c, extra_sapcing=20,isend=False, equal_sign= True):
 		#piece : the math piece or part that would be recognzied as a math function during the process. 
@@ -67,7 +86,6 @@ class Paper():
 		
 		if equal_sign and isend:
 			self.mathOperator((r-self.descend, c), "=")
-
 	def crack(self, filename, max_rows_in_the_test=30):# 
 		# filename: the name file that we would extract the math equations from.
 
@@ -75,7 +93,8 @@ class Paper():
 		with open(filename + ".txt", "r") as file:
 			for i, l in enumerate([g.replace("\n", "") for g in file.readlines()]):
 				for j in [f for f in l.split(" ") if f != ""]:
-					res[i].append(re.findall(r"([0-9]+/[0-9]+|[+-]|[0-9]+)", j))
+					#res[i].append(re.findall(r"([0-9]+/[0-9]+|[+-]|[0-9]+)", j))      #disabled while random exists.
+					res[i].append(re.findall(r"([0-9abcd]+/[0-9abcd]+|[+-]|[0-9abcd]+)", j))
 		return [i for i in res if i != []]
 
 	def NumberOfLines_Positions(self, size, n, head=400, tail=400, margin=50): # this func produce vertical coordinates of question.
@@ -85,7 +104,6 @@ class Paper():
 		#tail   : empty space at bottom of paper.
 		#margin : space left from the right side to avoid the edge. 
 		return [i for i in range(head, (size[1]-tail), (size[1]-tail)//n)]
-	
 	def NumberOfQuestionsInLine_Positions(self, size, n, marginR=200, marginL=200, mode="expand"): # this func produce horizontal coordinates of question.
 		#size   : size of the paper.
 		#n      : number of lines.
@@ -109,16 +127,13 @@ class Paper():
 			#print("PROBLEM: " + text +" is not fixed, go add fixing instructions in the >>fixTextSize()<< function !"  )
 			return position[0]-size[0], position[1] - int(size[1]*0.6)
 		return position[0]-dict[text][0]-size[0],position[1] - dict[text][1]
-
 	def mathOperator(self, pos, operator, disable_drawing=False):
 		if disable_drawing:return self.draw.textsize(text= operator, font= self.fnt)
 		self.draw.text(self.fixTextSize(pos, operator, self.fnt), text=operator, fill="black", font=self.fnt )
 		return self.draw.textsize(text= operator, font= self.fnt) #adjust
-
 	def numeral(self,pos ,num, disable_drawing= False, not_numerals=False):
 		if disable_drawing: return self.draw.textsize(text= num, font= self.fnt)
 		self.draw.text(self.fixTextSize(pos, num, not_numerals), text=self.replace(self.nums, num)[::-1], fill="black", font=self.fnt )
-
 	def Fraction(self, pos, n, d, margin_from_fractoion_center= 70, disable_drawing=False):
 		#pos : the position of the fraction. 
 		#n   : the numerator of the fraction.
@@ -148,6 +163,6 @@ class Paper():
 		self.draw.text(dFixedPosition, text=self.replace(self.nums, d), fill="black", font=self.fnt )
 		return centerSize              #adjust
 
-Paper().Core("math", 10, 2)
+Paper().Core("math1", 10, 3)
 
 os.startfile(f"aa.png")
