@@ -1,6 +1,6 @@
 from PIL import Image , ImageDraw , ImageFont #6.1.0
-import os, re
-from random import randint
+import os, sys, re
+from random import randint,choice
 
 
 class Paper():
@@ -14,7 +14,9 @@ class Paper():
 					"6":"٦",
 					"7":"٧",
 					"8":"٨",
-					"9":"٩"}
+					"9":"٩",
+					"*":"×"}
+
 
 		self.A4 = 2480, 3508
 		self.img = Image.new(mode = 'RGB' , size = self.A4 , color = "white")    
@@ -27,6 +29,7 @@ class Paper():
 		         text)
 		
 		self.memory = 9999 # this variable is for the function: self.rando() :"D
+		self.numbering = 1
 
 		# BORDER HERE .
 		self.draw.rectangle([(30,30), (self.A4[0]-30, self.A4[1]-30)], outline="rgb(150, 150, 150)", width=5)
@@ -47,14 +50,23 @@ class Paper():
 
 				self.descend = 0   #this part is for the steps that help make the math readable 
 
-				########################################### WORKING AREA #########################################################
-
-				self.draw.text(self.fixTextSize((r+75, c+25), "+"), text=self.replace(self.nums, f"({str(sum([j,i])+[i for i in range(1,50)if i%2 != 0][i])})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
+				########################################### PAINTING AREA #########################################################
 				
+			########################################### NUMBERING AREA #########################################################
+				self.draw.text(self.fixTextSize((r+75, c+25), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
+				self.numbering += 1
+			####################################################################################################################
 				try:
 					freeze = self.DomesticREngine(self.crack(filename)[i][j])
 					for e, b in enumerate(freeze):   
 						self.recognizer(b, r, c, isend = True if e == len(list(enumerate(freeze)))-1 else False)
+
+						################# Simple Progress Bar ####################
+						total = (rows-1)*columns
+						per = (self.numbering/total)*50
+						sys.stdout.write("\r["+ "="*int(per) + " "*int(50-per) + "] Loading...")
+						sys.stdout.flush()
+						###########################################################
 				except:
 					print("this index doesn't exist: "+"("+ str(i)+","+str(j) +")"+ ", or you didn't command more than :" + str(len(self.crack(filename))))
 				
@@ -62,7 +74,8 @@ class Paper():
 				###################################################################################################################
 
 		self.img.save("aa.png")
-	def DomesticREngine(self, cracked, integer_values= True, ansers_range_limit = 100):
+	def DomesticREngine(self, cracked, integer_values= True, answers_min_limit=0, answers_max_limit = 100):
+		#DomesticREngine: "D"omestic "R"adom "E"ngine
 		#cracked        : the list that contains the equstion parts. 
 		#################### conditions ##################################
 		#integer_values : the term guarantees that the answers will be simple integers
@@ -82,23 +95,11 @@ class Paper():
 		while True:
 			sample = eval(self.replaceV2(ranges, str(cracked)))
 			eq = eval("".join(sample))
-			if eq == int(eq) and eq <= ansers_range_limit:
+			if all([eq == int(eq), eq >= answers_min_limit, eq <= answers_max_limit]):
 				return sample
-	def SimpleRandomEngine(self, cracked): # this engine is old you shouldn't use it
-		self.replaceV2 = lambda dict, text: re.sub("|".join(map(re.escape, dict.keys())),
-		 	     lambda m: str(randint(*dict[m.string[m.start():m.end()]])),
-		         text)
-		ranges ={
-				"d": (2,100),
-				"c": (2,30),
-				"b": (2,20),
-				"a": (2,10),
-			}
 
 		return eval(self.replaceV2(ranges, str(cracked)))
 	def rando(self, s,e): #this function is the same random.randint however it's eveb better it can't return the same num twice in row.
-			#global self.memory
-			n = 0
 			while True:
 				n = randint(s, e)
 				if n != self.memory:
@@ -110,18 +111,20 @@ class Paper():
 		#c     : the number if columns. 
 		#extra_sapcing : space left between all equation parts that helps make the equation more readable. 
 
-		if "/" in piece:
+		if "/" in piece and "(" in piece:                      #(n+n) / (n-n)
+			self.Fraction((r- self.descend-30 , c), *piece.split("/"), centerLength=3)
+			self.descend += self.Fraction((r, c), "5", "5", disable_drawing=True)[0]*3/1.6 + extra_sapcing
+		elif "/" in piece:                    #n / n  
 			self.Fraction((r- self.descend , c), *piece.split("/"))
 			self.descend += self.Fraction((r, c), "5", "5", disable_drawing=True)[0] + extra_sapcing
-		if "+" in piece or "-"in piece:
-			self.mathOperator((r-self.descend , c ), piece)       
+		elif "+" in piece or "-"in piece or "*" in piece:     # n + n
+			if "*"in piece:pass
+			self.mathOperator((r-self.descend , c ), self.replace(self.nums, piece))       
 			self.descend += self.mathOperator((r, c), piece, disable_drawing=True)[0] +extra_sapcing
-
-		if piece.isdigit():
+		elif piece.isdigit():                 #n
 			self.numeral((r-self.descend , c), piece)
 			#print(self.numeral((r, c), piece, disable_drawing= True, not_numerals=True)[0])
-			self.descend += self.numeral((r, c), piece, disable_drawing= True)[0] + extra_sapcing
-		
+			self.descend += self.numeral((r, c), piece, disable_drawing= True)[0] + extra_sapcing	
 		if equal_sign and isend:
 			self.mathOperator((r-self.descend, c), "=")
 	def crack(self, filename, max_rows_in_the_test=30):# 
@@ -132,7 +135,7 @@ class Paper():
 			for i, l in enumerate([g.replace("\n", "") for g in file.readlines()]):
 				for j in [f for f in l.split(" ") if f != ""]:
 					#res[i].append(re.findall(r"([0-9]+/[0-9]+|[+-]|[0-9]+)", j))      #disabled while random exists.
-					res[i].append(re.findall(r"([0-9abcd]+/[0-9abcd]+|[+-]|[0-9abcd]+)", j))
+					res[i].append(re.findall(r"\([0-9abcd+\-*]+\)/\([0-9abcd+\-*]+\)|\([0-9abcd+\-*]+\)/[0-9abcd]+|[0-9abcd]+/\([0-9abcd+\-*]+\)|[0-9abcd]+/[0-9abcd]+|[+*-]|[0-9abcd]+", j))
 		return [i for i in res if i != []]
 	def NumberOfLines_Positions(self, size, n, head= 400, tail=400, margin=50): # this func produce vertical coordinates of question.
 		#size   : size of the paper.
@@ -141,12 +144,12 @@ class Paper():
 		#tail   : empty space at bottom of paper.
 		#margin : space left from the right side to avoid the edge. 
 		return [i for i in range(head, (size[1]-tail), (size[1]-tail)//n)]
-	def NumberOfQuestionsInLine_Positions(self, size, n, marginR=200, marginL=200, mode="expand"): # this func produce horizontal coordinates of question.
+	def NumberOfQuestionsInLine_Positions(self, size, n, marginR=0, marginL=300, mode="expand"): # this func produce horizontal coordinates of question.
+		#NOTE   : this function needs update. 
 		#size   : size of the paper.
 		#n      : number of lines.
 		#marginR: margin right.
 		#marginL: margin left.
-		#mode   : "expand" or "sequence" 
 
 		return [i for i in range(marginR, (size[0]), (size[0]-marginL-marginR)//(n))][1:]
 	def fixTextSize(self, position, text, not_numerals=False): 
@@ -154,11 +157,13 @@ class Paper():
 		#text     : the text targeted to be fixed. 
 		#font     : a PILLOW object of the font used by default>> fnt = ImageFon.... ect.
 		size = self.draw.textsize(text=text, font= self.fnt)
-	
+		
+		if text[0] == "_":text="__" #spectial case for the center sign of all fraction to reduce the number of conditions in the below dict.
 		dict = {"__": (0, int(0.93*size[1])),   
 		 		"+": (0, int(0.732*size[1])), #0.53
 		 		"-": (0, int(0.72*size[1])),
-		 		"=": (0, int(0.72*size[1]))}
+		 		"=": (0, int(0.72*size[1])),
+		 		"×": (-10, int(0.732*size[1]))}
 		if text not in dict:
 			if not_numerals: return position[0]-size[0], position[1] - int(size[1]*0.41) 
 			#print("PROBLEM: " + text +" is not fixed, go add fixing instructions in the >>fixTextSize()<< function !"  )
@@ -172,7 +177,7 @@ class Paper():
 		if disable_drawing: return self.draw.textsize(text= num, font= self.fnt)
 		print()
 		self.draw.text(self.fixTextSize(pos, num, not_numerals), text=self.replace(self.nums, num), fill="black", font=self.fnt )
-	def Fraction(self, pos, n, d, margin_from_fractoion_center= 70, disable_drawing=False):
+	def Fraction(self, pos, n, d, centerLength=2, margin_from_fractoion_center= 70, disable_drawing=False):
 		#pos : the position of the fraction. 
 		#n   : the numerator of the fraction.
 		#d   : the dominator of the fraction.
@@ -183,11 +188,11 @@ class Paper():
 		
 
 
-		centerSize = self.draw.textsize(text="__", font= self.fnt)
+		centerSize = self.draw.textsize(text="_"*centerLength, font= self.fnt)
 
 		if disable_drawing:return centerSize                  # when using this func for only dimentions of "__"
 
-		fracCenter = self.draw.text(self.fixTextSize(pos, "__", self.fnt), text="__", fill="black", font=self.fnt ) 
+		self.draw.text(self.fixTextSize(pos, "_"*centerLength, self.fnt), text="_"*centerLength, fill="black", font=self.fnt ) 
 
 		### the numerator & dominator setup and drawing ####
 		
@@ -199,8 +204,21 @@ class Paper():
 		dFixedPosition = (dpos[0] + dSize[0]//2 - centerSize[0]//2), (dpos[1]+margin_from_fractoion_center-35)
 		self.draw.text(nFixedPosition, text=self.replace(self.nums, n), fill="black", font=self.fnt )
 		self.draw.text(dFixedPosition, text=self.replace(self.nums, d), fill="black", font=self.fnt )
-		return centerSize              #adjust
 
-Paper().Core("math2", 10, 3)
+	def RandomMathModel(self, filename, rows, columns):
+		self.o = ["a", "b"]
+		self.op = ["+", "-", "*"]
+		with open(filename+".txt", "w") as file:
+			for i in range(rows):
+				for j in range(columns):
+					#the line below the the imporant one: use it to write the regex of equstion per line.
+					#file.write(f"({choice(self.o)}{choice(self.op)}{choice(self.o)})/({choice(self.o)}{choice(self.op)}{choice(self.o)}){choice(self.op)}{choice(self.o)}")
+					file.write(f"{choice(self.o)}/{choice(self.o)}")
+					file.write("  ")
+				file.write("\n")
+
+Paper().RandomMathModel("math123" , 15, 3)
+
+Paper().Core("math123", 12, 3)
 
 os.startfile(f"aa.png")
