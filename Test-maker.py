@@ -1,8 +1,8 @@
 from PIL import Image , ImageDraw , ImageFont #6.1.0
-import os, sys, re
+import os, sys, re, time
 from random import randint,choice
 
-
+s = time.time()
 class Paper():
 	def __init__(self):
 		self.nums ={"0":"٠",
@@ -30,12 +30,12 @@ class Paper():
 		
 		self.memory = 9999 # this variable is for the function: self.rando() :"D
 		self.numbering = 1
-
+		self.temp = 0
 		# BORDER HERE .
 		self.draw.rectangle([(30,30), (self.A4[0]-30, self.A4[1]-30)], outline="rgb(150, 150, 150)", width=5)
 
 
-	def Core(self,filename , rows, columns):
+	def Core(self,filename , rows, columns, progressBar= True):
 		#filename: the name file that we would extract the math equations from.
 		#Core : is the core function that make all this beautiful thing works and produce actual tests. 
 
@@ -53,7 +53,7 @@ class Paper():
 				########################################### PAINTING AREA #########################################################
 				
 			########################################### NUMBERING AREA #########################################################
-				self.draw.text(self.fixTextSize((r+75, c+25), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
+				self.draw.text(self.fixTextSize((r+85, c+25), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
 				self.numbering += 1
 			####################################################################################################################
 				try:
@@ -62,10 +62,11 @@ class Paper():
 						self.recognizer(b, r, c, isend = True if e == len(list(enumerate(freeze)))-1 else False)
 
 						################# Simple Progress Bar ####################
-						total = (rows-1)*columns
-						per = (self.numbering/total)*50
-						sys.stdout.write("\r["+ "="*int(per) + " "*int(50-per) + "] Loading...")
-						sys.stdout.flush()
+						if progressBar:
+							total = (rows-1)*columns
+							per = (self.numbering/total)*50
+							sys.stdout.write("\r["+ "="*int(per) + " "*int(50-per) + "] Loading...")
+							sys.stdout.flush()
 						###########################################################
 				except:
 					print("this index doesn't exist: "+"("+ str(i)+","+str(j) +")"+ ", or you didn't command more than :" + str(len(self.crack(filename))))
@@ -91,14 +92,16 @@ class Paper():
 				"a": (2,10),
 
 			}
-		
 		while True:
 			sample = eval(self.replaceV2(ranges, str(cracked)))
 			eq = eval("".join(sample))
 			if all([eq == int(eq), eq >= answers_min_limit, eq <= answers_max_limit]):
+				self.temp += 1
+				print(self.temp, eq)
 				return sample
-
 		return eval(self.replaceV2(ranges, str(cracked)))
+	def CheckHealth(self, number_of_question):
+		pass
 	def rando(self, s,e): #this function is the same random.randint however it's eveb better it can't return the same num twice in row.
 			while True:
 				n = randint(s, e)
@@ -111,7 +114,8 @@ class Paper():
 		#c     : the number if columns. 
 		#extra_sapcing : space left between all equation parts that helps make the equation more readable. 
 
-		if "/" in piece and "(" in piece:                      #(n+n) / (n-n)
+		if "/" in piece and "(" in piece:                    #(n+n) / (n-n)
+			piece ="("+"".join([re.findall("[0-9]+|[+\-*]", piece.split("/")[0])][0][::-1])+")"+"/"+"("+"".join([re.findall("[0-9]+|[+\-*]", piece.split("/")[1])][0][::-1])+")"
 			self.Fraction((r- self.descend-30 , c), *piece.split("/"), centerLength=3)
 			self.descend += self.Fraction((r, c), "5", "5", disable_drawing=True)[0]*3/1.6 + extra_sapcing
 		elif "/" in piece:                    #n / n  
@@ -206,14 +210,15 @@ class Paper():
 		self.draw.text(dFixedPosition, text=self.replace(self.nums, d), fill="black", font=self.fnt )
 
 	def RandomMathModel(self, filename, rows, columns):
-		self.o = ["a", "b"]
-		self.op = ["+", "-", "*"]
+		#WARNING: make sure some of the operations you generate can  follows the conditions [answers_min_limit, eq <= answers_max_limit]
+		self.o = ["a","b","c","d"]
+		self.op = ["+", "-", "*","+", "-"]
 		with open(filename+".txt", "w") as file:
 			for i in range(rows):
 				for j in range(columns):
 					#the line below the the imporant one: use it to write the regex of equstion per line.
-					#file.write(f"({choice(self.o)}{choice(self.op)}{choice(self.o)})/({choice(self.o)}{choice(self.op)}{choice(self.o)}){choice(self.op)}{choice(self.o)}")
-					file.write(f"{choice(self.o)}/{choice(self.o)}")
+					file.write(f"({choice(self.o)}{choice(self.op)}{choice(self.o)})/({choice(self.o)}{choice(self.op)}{choice(self.o)})")
+					#file.write(f"{choice(self.o)}/{choice(self.o)}")
 					file.write("  ")
 				file.write("\n")
 
@@ -222,3 +227,10 @@ Paper().RandomMathModel("math123" , 15, 3)
 Paper().Core("math123", 12, 3)
 
 os.startfile(f"aa.png")
+
+
+e = time.time()
+print("\n it took: " + str(e-s))
+time.sleep(60)
+
+
