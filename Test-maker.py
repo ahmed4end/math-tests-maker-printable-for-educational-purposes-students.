@@ -50,7 +50,7 @@ class Paper():
 		self.numbering_ans = 100
 		self.health = []
 		self.anti_conflict = 0
-
+		self.pbarvar = 1
 		
 
 
@@ -73,7 +73,6 @@ class Paper():
 			print("RECOMMENDATION: We recommend you to use: "+str(len(self.crack(filename))+1)+" columns & 3 rows.")
 		############## progress bar ###############
 		total = (rows-1)*columns
-		pbar = tqdm(total= 60)
 		############################################
 		for i, c in enumerate(self.NumberOfLines_Positions(self.A4, rows)):
 			for j, r in enumerate(self.NumberOfQuestionsInLine_Positions(self.A4, columns)[::-1]):
@@ -84,8 +83,6 @@ class Paper():
 			########################################### PAINTING AREA #########################################################
 				
 			
-				
-				pbar.update(total/60*100)
 
 				try:
 
@@ -94,14 +91,20 @@ class Paper():
 						self.recognizer(b, r, c, isend = True if e == len(list(enumerate(freeze)))-1 else False)
 				
 				########################################### NUMBERING AREA #########################################################
-					self.draw.text(self.fixTextSize((r+85, c+35), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
+					self.draw.text(self.fixTextSize((r+85, c+35), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(150, 150, 150)", font=self.smallfnt )
 					self.numbering += 1
+
+
 				####################################################################################################################
 				except:
 					print("this index doesn't exist: "+"("+ str(i)+","+str(j) +")"+ ", or you didn't command more than :" + str(len(self.crack(filename))))
-			pbar.close()
 
-
+				#################### simple decent progress bar ############################
+				per = int((self.numbering-1)/total * 60)
+				sys.stdout.write("\r["+"="*per + " "*(60- per) + "] " + str(int((self.numbering-1)/total*100))+"%")
+				sys.stdout.flush()
+				############################################################################
+				
 		if answers: self.Answers(self.numbering_ans)
 		
 		health = int(sum([1 for i in self.health if i <= 10])/len(self.health)*100)
