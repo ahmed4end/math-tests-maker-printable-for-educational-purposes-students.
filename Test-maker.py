@@ -7,6 +7,7 @@ from tqdm import tqdm
 s = time.time()
 class Paper():
 	def __init__(self):
+
 		self.nums ={"0":"٠",
 					"1":"١",
 					"2":"٢",
@@ -26,8 +27,16 @@ class Paper():
 		self.A4 = 2480, 3508
 		self.img = Image.new(mode = 'RGB' , size = self.A4 , color = "white")    
 		self.draw = ImageDraw.Draw(self.img)
-		self.fnt = ImageFont.truetype(os.path.join(os.getcwd()+ "\\ar.ttf") , 130)
+		
+		try:
+			self.fnt = ImageFont.truetype(os.path.join(os.getcwd()+ "\\ar.ttf") , 130)
+		except:
+			print("The font arabic typesetting is missing please, retrieve it to current work directory named as 'ar.ttf'.")
+			time.sleep(30)
+			sys.exit()
+
 		self.smallfnt = ImageFont.truetype(os.path.join(os.getcwd()+ "\\ar.ttf") , 75)
+		self.verysmallfnt = ImageFont.truetype(os.path.join(os.getcwd()+ "\\ar.ttf") , 50)
 
 		self.replace = lambda dict, text: re.sub("|".join(map(re.escape, dict.keys())),
 		 	     lambda m: dict[m.string[m.start():m.end()]],
@@ -38,6 +47,7 @@ class Paper():
 
 		self.memory = [9999,9999] # this variable is for the function: self.rando() :"D
 		self.numbering = 1
+		self.numbering_ans = 100
 		self.health = []
 		self.anti_conflict = 0
 
@@ -47,12 +57,13 @@ class Paper():
 		################## RandomMathModel() AREA #########################################
 		self.o = ["a","b","c","d"]
 		self.op = ["+", "-", "*"]
+		#self.modelregex = f"{choice(self.o)}{choice(self.op)}{choice(self.o)}"
 		self.modelregex = f"({choice(self.o)}{choice(self.op)}{choice(self.o)})/({choice(self.o)}{choice(self.op)}{choice(self.o)}){choice(self.op)}{choice(self.o)}"
 		####################################################################################
 
 		# BORDER HERE .
 		self.draw.rectangle([(30,30), (self.A4[0]-30, self.A4[1]-30)], outline="rgb(150, 150, 150)", width=5)
-	def Core(self,filename , rows, columns, progressBar= True):
+	def Core(self,filename , rows, columns, progressBar= True, answers=True):
 		#filename: the name file that we would extract the math equations from.
 		#Core : is the core function that make all this beautiful thing works and produce actual tests. 
 
@@ -70,12 +81,10 @@ class Paper():
 
 				self.descend = 0   #this part is for the steps that help make the math readable 
 
-				########################################### PAINTING AREA #########################################################
+			########################################### PAINTING AREA #########################################################
 				
-			########################################### NUMBERING AREA #########################################################
-				self.draw.text(self.fixTextSize((r+85, c+25), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
-				self.numbering += 1
-			####################################################################################################################
+			
+				
 				pbar.update(total/60*100)
 
 				try:
@@ -83,17 +92,51 @@ class Paper():
 					freeze = self.DomesticREngine(self.crack(filename)[i][j])
 					for e, b in enumerate(freeze):   
 						self.recognizer(b, r, c, isend = True if e == len(list(enumerate(freeze)))-1 else False)
-
+				
+				########################################### NUMBERING AREA #########################################################
+					self.draw.text(self.fixTextSize((r+85, c+35), "+"), text=self.replace(self.nums, f"({str(self.numbering)})"), fill="rgb(64, 64, 64)", font=self.smallfnt )
+					self.numbering += 1
+				####################################################################################################################
 				except:
 					print("this index doesn't exist: "+"("+ str(i)+","+str(j) +")"+ ", or you didn't command more than :" + str(len(self.crack(filename))))
 			pbar.close()
-				
-		health = int(sum([1 for i in self.health if i < 10])/len(self.health)*100)
-		print("\nhealth:".ljust(10), str(health).rjust(5)+"%")
-				###################################################################################################################
 
-		self.img.save("aa.png")
-	def DomesticREngine(self, cracked, integer_values= True, answers_min_limit=0, answers_max_limit = 50):
+
+		if answers: self.Answers(self.numbering_ans)
+		
+		health = int(sum([1 for i in self.health if i <= 10])/len(self.health)*100)
+		print("\nhealth:".ljust(10), str(health).rjust(5)+"%")
+		
+		self.img.save("output.png")
+			###################################################################################################################
+		
+
+	
+	def Answers(self, h, border= True):
+		self.img = self.img.transpose(Image.ROTATE_270)
+		self.draw = ImageDraw.Draw(self.img)
+		
+		borderhightstart = self.numbering_ans
+
+		for n, i in enumerate(self.health):
+			h = self.numbering_ans
+			if len(str(n+1)) <= 1:
+				self.draw.text(self.fixTextSize((125, h), "+"), text=self.replace(self.nums, f"({str(n+1)})"), fill="rgb(64, 64, 64)", font=self.verysmallfnt )
+				
+			if len(str(n+1)) > 1:
+				self.draw.text(self.fixTextSize((125-10, h), "+"), text=self.replace(self.nums, f"({str(n+1)})"), fill="rgb(64, 64, 64)", font=self.verysmallfnt )
+			if len(str(i)) <= 1:
+				self.draw.text(self.fixTextSize((200, h), "+"), text=self.replace(self.nums, f"{i}"), fill="rgb(64, 64, 64)", font=self.verysmallfnt )
+			if len(str(i)) > 1:
+				self.draw.text(self.fixTextSize((200-10, h), "+"), text=self.replace(self.nums, f"{i}"), fill="rgb(64, 64, 64)", font=self.verysmallfnt )
+			
+
+			self.numbering_ans += 50
+
+		if border: self.draw.rectangle([(30,30), (250, self.numbering_ans)], outline="rgb(150, 150, 150)", width=5)
+		self.img = self.img.transpose(Image.ROTATE_90)
+		
+	def DomesticREngine(self, cracked, integer_values= True, answers_min_limit=0, answers_max_limit = 20):
 		#DomesticREngine: "D"omestic "R"adom "E"ngine
 		#cracked        : the list that contains the equstion parts. 
 		#################### conditions ##################################
@@ -113,8 +156,8 @@ class Paper():
 				self.anti_conflict += 1
 				sample = eval(self.replaceV2(self.ranges, str(cracked)))
 				eq = eval("".join(sample))
-				if all([eq == int(eq), eq >= answers_min_limit, eq <= answers_max_limit]):
-					self.health.append(eq)
+				if all([eq == int(eq), int(eq) >= answers_min_limit, int(eq) <= answers_max_limit]):
+					self.health.append(int(eq))
 					self.anti_conflict = 0
 					return sample
 				if self.anti_conflict > 50000:break
@@ -236,11 +279,11 @@ class Paper():
 					file.write("  ")
 				file.write("\n")
 
-Paper().RandomMathModel("math123" , 15, 3)
+Paper().RandomMathModel("math" , 15, 3)
 
-Paper().Core("math123", 12, 3)
+Paper().Core("math", 15, 3)
 
-os.startfile(f"aa.png")
+os.startfile(f"output.png")
 
 
 e = time.time()
